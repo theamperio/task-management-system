@@ -1,77 +1,104 @@
-import React, { useState, useEffect } from 'react'
-import { getLocalStorage } from '../../Utils/Localstorage'
+import React, { useState, useEffect, useContext } from 'react';
+import { getLocalStorage } from '../../Utils/Localstorage';
+import { TaskContext } from '../../Context/TaskProvider';
+import toast, { Toaster } from 'react-hot-toast';
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Get the task update trigger function from context
+    const { triggerTaskUpdate } = useContext(TaskContext);
 
     useEffect(() => {
-        const fetchTasks = () => {
-            try {
-                setLoading(true);
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = () => {
+        try {
+            setLoading(true);
+            
+            // Get current user and role from localStorage
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            const userRole = localStorage.getItem("role");
+            
+            // Get employee data from localStorage
+            const { employee } = getLocalStorage();
+            
+            let userTasks = [];
+            
+            if (userRole === "employee" && currentUser) {
+                // Find the logged-in employee
+                const currentEmployee = employee.find(emp => emp.id === currentUser.id);
                 
-                // Get current user and role from localStorage
-                const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-                const userRole = localStorage.getItem("role");
-                
-                // Get employee data from localStorage
-                const { employee } = getLocalStorage();
-                
-                let userTasks = [];
-                
-                if (userRole === "employee" && currentUser) {
-                    // Find the logged-in employee
-                    const currentEmployee = employee.find(emp => emp.id === currentUser.id);
-                    
-                    if (currentEmployee && currentEmployee.tasks && Array.isArray(currentEmployee.tasks)) {
-                        // Map employee's tasks to the format we need
-                        userTasks = currentEmployee.tasks.map(task => ({
+                if (currentEmployee && currentEmployee.tasks && Array.isArray(currentEmployee.tasks)) {
+                    // Map employee's tasks to the format we need
+                    userTasks = currentEmployee.tasks.map((task, index) => ({
+                        id: Math.random().toString(36).substr(2, 9),
+                        title: task.title,
+                        description: task.description,
+                        level: task.category || "Medium",
+                        date: task.date,
+                        formattedDate: new Date(task.date).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        }),
+                        status: getTaskStatus(task),
+                        completed: task.completed,
+                        failed: task.failed,
+                        active: task.active,
+                        newTask: task.newTask,
+                        employeeId: currentEmployee.id,
+                        taskIndex: index
+                    }));
+                }
+            } else if (userRole === "admin") {
+                // If admin, get all tasks
+                employee.forEach((emp, empIndex) => {
+                    if (emp.tasks && Array.isArray(emp.tasks)) {
+                        // Add employee tasks with employee name
+                        const employeeTasks = emp.tasks.map((task, taskIndex) => ({
                             id: Math.random().toString(36).substr(2, 9),
                             title: task.title,
                             description: task.description,
                             level: task.category || "Medium",
-                            date: new Date(task.date).toLocaleDateString('en-US', {
+                            date: task.date,
+                            formattedDate: new Date(task.date).toLocaleDateString('en-US', {
                                 day: 'numeric',
                                 month: 'short',
                                 year: 'numeric'
                             }),
-                            status: getTaskStatus(task)
+                            employeeName: emp.name,
+                            status: getTaskStatus(task),
+                            completed: task.completed,
+                            failed: task.failed,
+                            active: task.active,
+                            newTask: task.newTask,
+                            employeeId: emp.id,
+                            taskIndex: taskIndex
                         }));
+                        
+                        userTasks = [...userTasks, ...employeeTasks];
                     }
-                } else if (userRole === "admin") {
-                    // If admin, get all tasks
-                    employee.forEach(emp => {
-                        if (emp.tasks && Array.isArray(emp.tasks)) {
-                            // Add employee tasks with employee name
-                            const employeeTasks = emp.tasks.map(task => ({
-                                id: Math.random().toString(36).substr(2, 9),
-                                title: task.title,
-                                description: task.description,
-                                level: task.category || "Medium",
-                                date: new Date(task.date).toLocaleDateString('en-US', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric'
-                                }),
-                                employeeName: emp.name,
-                                status: getTaskStatus(task)
-                            }));
-                            
-                            userTasks = [...userTasks, ...employeeTasks];
-                        }
-                    });
-                }
-                
-                setTasks(userTasks);
-            } catch (error) {
-                console.error("Error fetching tasks:", error);
-            } finally {
-                setLoading(false);
+                });
             }
-        };
-        
-        fetchTasks();
-    }, []);
+            
+            setTasks(userTasks);
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            toast.error("Failed to load tasks", {
+                duration: 3000,
+                position: 'top-right',
+                style: {
+                    background: '#333',
+                    color: '#fff'
+                }
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
     
     // Helper function to determine task status
     const getTaskStatus = (task) => {
@@ -81,6 +108,145 @@ const TaskList = () => {
         if (task.active) return "Active";
         return "Pending";
     };
+    
+    // Task action handlers
+    const handleAcceptTask = (taskData) => {
+        updateTaskStatus(
+            taskData, 
+            { newTask: false, active: true },
+            `Task "${taskData.title}" accepted successfully!`,
+            "success"
+        );
+    };
+    
+    const handleCompleteTask = (taskData) => {
+        updateTaskStatus(
+            taskData, 
+            { active: false, completed: true },
+            `Task "${taskData.title}" marked as completed!`,
+            "success"
+        );
+    };
+    
+    const handleRejectTask = (taskData) => {
+        updateTaskStatus(
+            taskData, 
+            { active: false, failed: true, newTask: false },
+            `Task "${taskData.title}" rejected.`,
+            "warning"
+        );
+    };
+    
+    // Function to update task status in localStorage
+    const updateTaskStatus = (taskData, newStatus, message, notificationType) => {
+        try {
+            // Get current data from localStorage
+            const { employee } = getLocalStorage();
+            
+            // Find the employee
+            const employeeIndex = employee.findIndex(emp => emp.id === taskData.employeeId);
+            if (employeeIndex === -1) {
+                toast.error("Error: Employee not found", {
+                    duration: 3000,
+                    position: 'top-right',
+                    style: {
+                        background: '#333',
+                        color: '#fff'
+                    }
+                });
+                return;
+            }
+            
+            // Create deep copy to avoid reference issues
+            const updatedEmployees = JSON.parse(JSON.stringify(employee));
+            
+            // Update the specific task with new status
+            const task = updatedEmployees[employeeIndex].tasks[taskData.taskIndex];
+            Object.assign(task, newStatus);
+            
+            // Save back to localStorage
+            localStorage.setItem("employee", JSON.stringify(updatedEmployees));
+            
+            // Show toast notification based on type
+            if (notificationType === 'success') {
+                toast.success(message, {
+                    duration: 3000,
+                    position: 'top-right',
+                    style: {
+                        background: '#333',
+                        color: '#fff'
+                    },
+                    iconTheme: {
+                        primary: '#10B981',
+                        secondary: '#FFF'
+                    }
+                });
+            } else if (notificationType === 'warning') {
+                toast(message, {
+                    duration: 3000,
+                    position: 'top-right',
+                    icon: '⚠️',
+                    style: {
+                        background: '#333',
+                        color: '#fff'
+                    }
+                });
+            } else {
+                toast(message, {
+                    duration: 3000,
+                    position: 'top-right',
+                    style: {
+                        background: '#333',
+                        color: '#fff'
+                    }
+                });
+            }
+            
+            // Refresh task list
+            fetchTasks();
+            
+            // Trigger update in other components
+            triggerTaskUpdate();
+            
+        } catch (error) {
+            console.error("Error updating task status:", error);
+            toast.error("Error updating task status", {
+                duration: 3000,
+                position: 'top-right',
+                style: {
+                    background: '#333',
+                    color: '#fff'
+                }
+            });
+        }
+    };
+    
+    // Check if task is overdue
+    const isTaskOverdue = (date) => {
+        const taskDate = new Date(date);
+        const today = new Date();
+        return taskDate < today;
+    };
+    
+    // Auto-fail overdue tasks that are still active or new
+    useEffect(() => {
+        const checkOverdueTasks = () => {
+            const tasksToUpdate = tasks.filter(task => 
+                (task.active || task.newTask) && 
+                !task.completed && 
+                !task.failed && 
+                isTaskOverdue(task.date)
+            );
+            
+            tasksToUpdate.forEach(task => {
+                handleRejectTask(task);
+            });
+        };
+        
+        if (tasks.length > 0) {
+            checkOverdueTasks();
+        }
+    }, [tasks]);
     
     // Function to get color based on task level/category
     const getLevelColor = (level) => {
@@ -116,6 +282,9 @@ const TaskList = () => {
   
     return (
         <div id="task-list" className='mt-5 rounded-[8px] h-[500px] overflow-auto'>
+            {/* React Hot Toast container */}
+            <Toaster />
+            
             <h2 className="text-xl font-bold text-white mb-4">Your Tasks</h2>
             
             {loading ? (
@@ -133,24 +302,61 @@ const TaskList = () => {
                             <div className='flex justify-between items-center'>
                                 <h3 className={`text-sm px-2 py-1 rounded-md ${getLevelColor(item.level)}`}>{item.level}</h3>
                                 <div className="flex flex-col items-end">
-                                    <h4 className='text-sm dark:text-gray-300'>{item.date}</h4>
+                                    <h4 className='text-sm dark:text-gray-300'>
+                                        {item.formattedDate}
+                                        {isTaskOverdue(item.date) && !item.completed && (
+                                            <span className="ml-1 text-xs text-red-500">(Overdue)</span>
+                                        )}
+                                    </h4>
                                     {item.employeeName && <span className="text-xs text-gray-500 mt-1">{item.employeeName}</span>}
                                 </div>
                             </div>
                             <h2 className='mt-3 text-xl font-semibold dark:text-white'>{item.title}</h2>
                             <p className='text-sm mt-2 text-gray-700 dark:text-gray-300 line-clamp-3'>{item.description}</p>
                             
-                            <div className="mt-3 flex justify-between items-center">
+                            <div className="mt-3 flex flex-wrap items-center justify-between">
                                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
                                     {item.status}
                                 </span>
+                                
+                                {/* Show action buttons for employees only and based on task state */}
+                                {localStorage.getItem("role") === "employee" && (
+                                    <div className="flex gap-1 mt-2 sm:mt-0">
+                                        {item.newTask && (
+                                            <button 
+                                                onClick={() => handleAcceptTask(item)}
+                                                className="text-xs px-2 py-1 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600"
+                                            >
+                                                Accept
+                                            </button>
+                                        )}
+                                        
+                                        {item.active && (
+                                            <button 
+                                                onClick={() => handleCompleteTask(item)}
+                                                className="text-xs px-2 py-1 bg-green-500 text-white rounded-md cursor-pointer hover:bg-green-600"
+                                            >
+                                                Complete
+                                            </button>
+                                        )}
+                                        
+                                        {(item.newTask || item.active) && (
+                                            <button 
+                                                onClick={() => handleRejectTask(item)}
+                                                className="text-xs px-2 py-1 bg-red-500 text-white rounded-md cursor-pointer hover:bg-red-600"
+                                            >
+                                                Reject
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default TaskList;

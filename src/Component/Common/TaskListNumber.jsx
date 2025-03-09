@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { getLocalStorage } from '../../Utils/Localstorage';
+import { TaskContext } from '../../Context/TaskProvider';
 
 const TaskListNumber = () => {
     const [taskStats, setTaskStats] = useState({
@@ -8,6 +9,9 @@ const TaskListNumber = () => {
         completedTasks: 0,
         failedTasks: 0
     });
+    
+    // Get the task update trigger from context
+    const { taskUpdateTrigger } = useContext(TaskContext);
 
     useEffect(() => {
         // Fetch data from localStorage and count tasks by status
@@ -67,7 +71,7 @@ const TaskListNumber = () => {
         };
         
         calculateTaskStats();
-    }, []);
+    }, [taskUpdateTrigger]); // Re-run when taskUpdateTrigger changes
 
     const data = [
         {
@@ -105,7 +109,7 @@ const TaskListNumber = () => {
     ];
     
     return (
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className=" grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {data.map((item) => (
                 <div 
                     key={item.id} 

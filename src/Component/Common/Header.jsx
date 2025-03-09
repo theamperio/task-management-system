@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
+import { LogOut } from "lucide-react";
 
 export const Header = () => {
   const [userName, setUserName] = useState("");
@@ -29,16 +31,47 @@ export const Header = () => {
   }, []);
 
   const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("role");
+    // Get the current user's name for the toast
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const name = currentUser?.name || "User";
     
-    // Redirect to login page
-    navigate("/login");
+    // Show loading toast
+    toast.loading("Logging out...", {
+      id: "logout",
+      position: 'top-right',
+      duration: 1000
+    });
+
+    // Add slight delay to simulate the process
+    setTimeout(() => {
+      // Clear user data from localStorage
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("role");
+      
+      // Dismiss loading toast and show success toast
+      toast.success(`Goodbye, ${name}! Logged out successfully.`, {
+        id: "logout",
+        duration: 3000,
+        icon: '👋',
+        position: 'top-right',
+        style: {
+          background: '#333',
+          color: '#fff'
+        }
+      });
+      
+      // Redirect to login page after a short delay to show the toast
+      setTimeout(() => {
+        navigate("/");
+      }, 800);
+    }, 500);
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 p-2 sm:p-4 bg-gray-800 rounded-lg mb-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-4 bg-gray-800">
+      {/* Add Toaster component */}
+      <Toaster />
+      
       <div>
         <h1 className="text-xl sm:text-2xl font-semibold text-white">
           Hello 👋
@@ -50,14 +83,12 @@ export const Header = () => {
         </h1>
       </div>
       
-      <div className="flex items-center gap-2 self-end sm:self-auto">
+      <div className="flex items-center gap-2 self-auto md:self-end">
         <button 
           onClick={handleLogout}
-          className="bg-red-200 text-red-500 px-3 py-2 rounded-md hover:bg-red-500 hover:text-white font-medium transition-colors duration-200 flex items-center gap-1"
+          className="bg-red-200 text-red-500 px-3 py-2 rounded-md hover:bg-red-500 hover:text-white font-medium transition-colors duration-200 flex items-center gap-1 cursor-pointer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <LogOut size={16} />
           Logout
         </button>
       </div>

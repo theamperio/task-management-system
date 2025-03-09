@@ -2,6 +2,8 @@ import React, { useState, useContext } from "react";
 import { DiamondPlus } from "lucide-react";
 import { getLocalStorage } from "../../Utils/Localstorage";
 import { AuthContext } from "../../Context/AuthProvider";
+import toast, { Toaster } from "react-hot-toast";
+import { TaskContext } from "../../Context/TaskProvider";
 
 export const CreateTask = () => {
   const [taskTitle, setTaskTitle] = useState("");
@@ -13,6 +15,9 @@ export const CreateTask = () => {
   
   // Get user data from context
   const { userData } = useContext(AuthContext);
+  
+  // Get task trigger update function from context
+  const { triggerTaskUpdate } = useContext(TaskContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,13 +63,45 @@ export const CreateTask = () => {
         setTaskCategory("");
         setTaskDescription("");
         
-        alert("Task Created Successfully");
+        // Show success toast
+        toast.success(`Task assigned to ${taskAssignTo} successfully!`, {
+          duration: 4000,
+          position: 'top-right',
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+          iconTheme: {
+            primary: '#10B981',
+            secondary: '#FFF',
+          },
+        });
+        
+        // Update other components that display task data
+        triggerTaskUpdate();
       } else {
-        alert("Employee not found. Please check the name and try again.");
+        // Show error toast for employee not found
+        toast.error(`Employee "${taskAssignTo}" not found. Please check the name.`, {
+          duration: 4000,
+          position: 'top-right',
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        });
       }
     } catch (error) {
       console.error("Error creating task:", error);
-      alert("Failed to create task. Please try again.");
+      
+      // Show error toast for general errors
+      toast.error("Failed to create task. Please try again.", {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#333',
+          color: '#fff',
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -72,6 +109,9 @@ export const CreateTask = () => {
   
   return (
     <div className="w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] mx-auto mt-6 sm:mt-10 text-white border border-gray-300 rounded-[8px] shadow-md">
+      {/* Add the Toaster component */}
+      <Toaster />
+      
       <div className="p-3 sm:p-4 md:p-6">
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center sm:text-left">Create New Task</h2>
         
@@ -86,7 +126,7 @@ export const CreateTask = () => {
                   onChange={(e) => setTaskTitle(e.target.value)}
                   type="text"
                   placeholder="Enter task title"
-                  className="w-full p-2 rounded-[8px] border border-gray-300 text-white"
+                  className="w-full p-2 rounded-[8px] border border-gray-300 text-white bg-gray-700"
                 />
               </div>
               
@@ -98,7 +138,7 @@ export const CreateTask = () => {
                   onChange={(e) => setTaskAssignTo(e.target.value)}
                   type="text"
                   placeholder="Enter employee name"
-                  className="w-full p-2 rounded-[8px] border border-gray-300  text-white"
+                  className="w-full p-2 rounded-[8px] border border-gray-300 text-white bg-gray-700"
                 />
               </div>
 
@@ -109,7 +149,7 @@ export const CreateTask = () => {
                   value={taskDate}
                   onChange={(e) => setTaskDate(e.target.value)}
                   type="date"
-                  className="w-full p-2 rounded-[8px] border border-gray-300  text-white"
+                  className="w-full p-2 rounded-[8px] border border-gray-300 text-white bg-gray-700"
                 />
               </div>
               
@@ -121,7 +161,7 @@ export const CreateTask = () => {
                   onChange={(e) => setTaskCategory(e.target.value)}
                   type="text"
                   placeholder="Design, Marketing, etc"
-                  className="w-full p-2 rounded-[8px] border border-gray-300  text-white"
+                  className="w-full p-2 rounded-[8px] border border-gray-300 text-white bg-gray-700"
                 />
               </div>
             </div>
@@ -134,7 +174,7 @@ export const CreateTask = () => {
                 onChange={(e) => setTaskDescription(e.target.value)}
                 rows="10"
                 placeholder="Enter task details here..."
-                className="w-full p-2 rounded-[8px] border border-gray-300  text-white flex-grow"
+                className="w-full p-2 rounded-[8px] border border-gray-300 text-white bg-gray-700 flex-grow"
               ></textarea>
             </div>
           </div>
@@ -143,7 +183,7 @@ export const CreateTask = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 py-2 px-4 sm:py-2.5 sm:px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 hover:cursor-pointer disabled:opacity-50 transition-all duration-200"
+              className="flex items-center gap-2 py-2 px-4 sm:py-2.5 sm:px-5 text-sm font-medium text-white focus:outline-none bg-blue-600 rounded-lg border border-blue-700 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 "Creating..."
