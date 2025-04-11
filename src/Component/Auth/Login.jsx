@@ -46,6 +46,11 @@ const Login = ({ handleLogin }) => {
           }
         });
         
+        // Only call handleLogin if the function exists
+        if (handleLogin) {
+          await handleLogin(email, password);
+        }
+        
         // Short delay to show the welcome toast before redirecting
         setTimeout(() => {
           navigate("/admin");
@@ -80,6 +85,11 @@ const Login = ({ handleLogin }) => {
         setTimeout(() => {
           navigate("/employee");
         }, 500);
+        
+        // Only call handleLogin if credentials match and the function exists
+        if (handleLogin) {
+          await handleLogin(email, password);
+        }
       } else {
         // Dismiss loading toast and show error toast
         toast.dismiss(loadingToast);
@@ -93,9 +103,10 @@ const Login = ({ handleLogin }) => {
         });
       }
 
-      if (handleLogin) {
-        await handleLogin(email, password);
-      }
+      // Remove this code as it's now handled inside the if block
+      // if (handleLogin) {
+      //   await handleLogin(email, password);
+      // }
     } catch (error) {
       console.error("Login error:", error);
       
