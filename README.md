@@ -2,7 +2,25 @@
 
  A modern, responsive task management application built with React that helps teams track and manage tasks efficiently. This application allows administrators to create and assign tasks to employees, track task progress, and view comprehensive statistics.
 
+## Live Demo
+
+Check out the live deployed project here:  
+👉 **[Live App](https://task-management-system-omega-eight.vercel.app)**
+
  ## Features
+
+### Protected Routes:
+- Role-based route access for Admins and Employees using React Router
+- Unauthorized users are redirected to the login page
+
+### Filtering Functionality:
+- Admin can filter tasks based on status like New, Active, Completed, and Failed
+- Employees can filter their own tasks for better organization
+
+### Fully Responsive Design:
+- Built with Tailwind CSS using mobile-first approach
+- Optimized for mobile, tablet, and desktop screen sizes
+
 
  ### For Administrators:
  - **Dashboard Overview**: View a comprehensive dashboard with task statistics

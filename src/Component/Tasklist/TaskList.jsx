@@ -297,7 +297,7 @@ const TaskList = () => {
     });
   
     return (
-        <div id="task-list" className='mt-5 rounded-[8px] h-[500px] overflow-auto'>
+        <div  id="task-list" className='mt-5 rounded-[8px]'>
             {/* React Hot Toast container */}
             <Toaster />
             
@@ -338,7 +338,7 @@ const TaskList = () => {
                     No {filter !== 'all' ? filter : ''} tasks found
                 </div>
             ) : (
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                <div  id="task-list" className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4  h-[500px] overflow-auto'>
                     {filteredTasks.map((item) => (
                         <div key={item.id} className='bg-white dark:bg-gray-800 rounded-[12px] p-4 shadow-md hover:shadow-lg transition-shadow duration-300'>
                             <div className='flex justify-between items-center'>
