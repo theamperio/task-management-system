@@ -8,6 +8,7 @@ const AllTask = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all"); // Add this state for filtering
   const { taskUpdateTrigger } = useContext(TaskContext);
   const modalRef = useRef(null);
 
@@ -127,6 +128,12 @@ const AllTask = () => {
   const handleViewTasks = (emp) => {
     setSelectedEmployee(emp);
     setShowModal(true);
+    setActiveFilter("all"); // Reset filter when opening modal
+  };
+
+  // Add this function to handle filter changes
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
   };
 
   return (
@@ -246,79 +253,113 @@ const AllTask = () => {
                 <div className="space-y-4">
                   {/* Task filter tabs */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full cursor-pointer">
+                    <button 
+                      className={`${activeFilter === "all" ? "bg-blue-600" : "bg-gray-700 hover:bg-blue-600"} text-white text-xs px-3 py-1 rounded-full cursor-pointer transition-colors`}
+                      onClick={() => handleFilterChange("all")}
+                    >
                       All
                     </button>
-                    <button className="bg-gray-700 hover:bg-blue-600 text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors">
+                    <button 
+                      className={`${activeFilter === "new" ? "bg-blue-600" : "bg-gray-700 hover:bg-blue-600"} text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors`}
+                      onClick={() => handleFilterChange("new")}
+                    >
                       New
                     </button>
-                    <button className="bg-gray-700 hover:bg-yellow-500 text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors">
+                    <button 
+                      className={`${activeFilter === "active" ? "bg-yellow-500" : "bg-gray-700 hover:bg-yellow-500"} text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors`}
+                      onClick={() => handleFilterChange("active")}
+                    >
                       Active
                     </button>
-                    <button className="bg-gray-700 hover:bg-green-600 text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors">
+                    <button 
+                      className={`${activeFilter === "completed" ? "bg-green-600" : "bg-gray-700 hover:bg-green-600"} text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors`}
+                      onClick={() => handleFilterChange("completed")}
+                    >
                       Completed
                     </button>
-                    <button className="bg-gray-700 hover:bg-red-600 text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors">
+                    <button 
+                      className={`${activeFilter === "failed" ? "bg-red-600" : "bg-gray-700 hover:bg-red-600"} text-white text-xs cursor-pointer px-3 py-1 rounded-full transition-colors`}
+                      onClick={() => handleFilterChange("failed")}
+                    >
                       Failed
                     </button>
                   </div>
 
                   {/* Sort tasks by date - newest first */}
-                  {[...selectedEmployee.tasks]
-                    .sort(
-                      (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
-                    )
-                    .map((task, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-700 p-4 rounded-lg hover:bg-gray-650 transition-colors"
-                        
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                          <h3 className="text-white font-medium text-lg">
-                            {task.title}
-                          </h3>
-                          <div className="flex items-center gap-2">
+                  {(() => {
+                    const filteredTasks = [...selectedEmployee.tasks].filter(task => {
+                      if (activeFilter === "all") return true;
+                      if (activeFilter === "new") return task.newTask;
+                      if (activeFilter === "active") return task.active && !task.newTask;
+                      if (activeFilter === "completed") return task.completed;
+                      if (activeFilter === "failed") return task.failed;
+                      return true;
+                    });
+
+                    if (filteredTasks.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <AlertCircle size={48} className="text-gray-500 mb-3" />
+                          <p className="text-gray-400">
+                            No {activeFilter !== "all" ? activeFilter : ""} tasks found
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return filteredTasks
+                      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+                      .map((task, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-700 p-4 rounded-lg hover:bg-gray-650 transition-colors"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                            <h3 className="text-white font-medium text-lg">
+                              {task.title}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full text-white ${
+                                  statusColors[
+                                    getStatusText(task).toLowerCase()
+                                  ] || "bg-gray-500"
+                                }`}
+                              >
+                                {getStatusText(task)}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-gray-600 text-gray-300 rounded-full">
+                                {task.category}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-gray-300 mb-4">{task.description}</p>
+
+                          <div className="flex items-center text-sm">
+                            <Calendar size={16} className="text-gray-400 mr-2" />
                             <span
-                              className={`text-xs px-2 py-1 rounded-full text-white ${
-                                statusColors[
-                                  getStatusText(task).toLowerCase()
-                                ] || "bg-gray-500"
+                              className={`${
+                                isOverdue(task.date) &&
+                                !task.completed &&
+                                !task.failed
+                                  ? "text-red-400"
+                                  : "text-gray-400"
                               }`}
                             >
-                              {getStatusText(task)}
-                            </span>
-                            <span className="text-xs px-2 py-1 bg-gray-600 text-gray-300 rounded-full">
-                              {task.category}
+                              Due: {formatDate(task.date)}
+                              {isOverdue(task.date) &&
+                                !task.completed &&
+                                !task.failed && (
+                                  <span className="ml-2 text-red-400 font-medium">
+                                    (Overdue)
+                                  </span>
+                                )}
                             </span>
                           </div>
                         </div>
-
-                        <p className="text-gray-300 mb-4">{task.description}</p>
-
-                        <div className="flex items-center text-sm">
-                          <Calendar size={16} className="text-gray-400 mr-2" />
-                          <span
-                            className={`${
-                              isOverdue(task.date) &&
-                              !task.completed &&
-                              !task.failed
-                                ? "text-red-400"
-                                : "text-gray-400"
-                            }`}
-                          >
-                            Due: {formatDate(task.date)}
-                            {isOverdue(task.date) &&
-                              !task.completed &&
-                              !task.failed && (
-                                <span className="ml-2 text-red-400 font-medium">
-                                  (Overdue)
-                                </span>
-                              )}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      ));
+                  })()}
                 </div>
               )}
             </div>

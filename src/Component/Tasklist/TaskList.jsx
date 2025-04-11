@@ -6,6 +6,7 @@ import toast, { Toaster } from 'react-hot-toast';
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all'); // Add filter state
     
     // Get the task update trigger function from context
     const { triggerTaskUpdate } = useContext(TaskContext);
@@ -280,12 +281,49 @@ const TaskList = () => {
         }
     };
   
+    // Add filter change handler
+    const handleFilterChange = (e) => {
+        setFilter(e.target.value);
+    };
+
+    // Filter tasks based on selected filter
+    const filteredTasks = tasks.filter(task => {
+        if (filter === 'all') return true;
+        if (filter === 'new') return task.status === 'New';
+        if (filter === 'active') return task.status === 'Active';
+        if (filter === 'completed') return task.status === 'Completed';
+        if (filter === 'failed') return task.status === 'Failed';
+        return true;
+    });
+  
     return (
         <div id="task-list" className='mt-5 rounded-[8px] h-[500px] overflow-auto'>
             {/* React Hot Toast container */}
             <Toaster />
             
-            <h2 className="text-xl font-bold text-white mb-4">Your Tasks</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-white">Your Tasks</h2>
+                
+                {/* Filter dropdown */}
+                <div className="relative">
+                    <select 
+                        value={filter}
+                        onChange={handleFilterChange}
+                        className="bg-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pr-8 appearance-none cursor-pointer"
+                    >
+                        <option value="all">All Tasks</option>
+                        <option value="new">New</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
             
             {loading ? (
                 <div className="flex justify-center items-center h-32 text-white">
@@ -295,9 +333,13 @@ const TaskList = () => {
                 <div className="flex justify-center items-center h-32 text-white">
                     No tasks available
                 </div>
+            ) : filteredTasks.length === 0 ? (
+                <div className="flex justify-center items-center h-32 text-white">
+                    No {filter !== 'all' ? filter : ''} tasks found
+                </div>
             ) : (
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {tasks.map((item) => (
+                    {filteredTasks.map((item) => (
                         <div key={item.id} className='bg-white dark:bg-gray-800 rounded-[12px] p-4 shadow-md hover:shadow-lg transition-shadow duration-300'>
                             <div className='flex justify-between items-center'>
                                 <h3 className={`text-sm px-2 py-1 rounded-md ${getLevelColor(item.level)}`}>{item.level}</h3>

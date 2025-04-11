@@ -9,15 +9,15 @@ export const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("create-task");  
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-4">
       {/* <h1 className="text-3xl font-bold text-white mb-8">Admin Dashboard</h1> */}
       
-      <div className="flex flex-wrap border-b border-gray-700 mb-6">
+      <div className="flex text-[15px] md:text-base border-b border-gray-700">
         <button
           onClick={() => setActiveTab("create-task")}
           className={`px-4 py-2 mr-2 cursor-pointer ${
             activeTab === "create-task"
-              ? "border-b-2 border-blue-500 text-blue-500"
+              ? "border-b-2 border-blue-500 text-blue-500 "
               : "text-white"
           }`}
         >
